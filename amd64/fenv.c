@@ -38,6 +38,9 @@
 #error "This file must be compiled with C99 'inline' semantics"
 #endif
 
+#if 1
+// _sjc_ Check whether we need to set this default structure for PureDarwin
+#else
 const fenv_t __fe_dfl_env = {
 	{ 0xffff0000 | __INITIAL_FPUCW__,
 	  0xffff0000,
@@ -47,10 +50,85 @@ const fenv_t __fe_dfl_env = {
 	},
 	__INITIAL_MXCSR__
 };
+#endif
 
+#if 1
+// _sjc_ From Apple's Libm-2026
+typedef struct {
+    unsigned short __control;
+    unsigned short __reserved1;
+    unsigned short __status;
+    unsigned short __reserved2;
+    unsigned int __private3;
+    unsigned int __private4;
+    unsigned int __private5;
+    unsigned int __private6;
+    unsigned int __private7;
+} __fpustate_t;
+
+#define FE_ALL_RND  ( FE_TONEAREST | FE_TOWARDZERO | FE_UPWARD | FE_DOWNWARD )
+
+static inline int _fesetexceptflag(const fexcept_t *flagp, int excepts ); // _sjc_ ALWAYS_INLINE;
+static inline int _fesetexceptflag(const fexcept_t *flagp, int excepts )
+{
+    int state;
+    __fpustate_t currfpu;
+    unsigned int mxcsr;
+    unsigned int exceptMask = excepts & FE_ALL_EXCEPT;
+    unsigned int andMask = ~exceptMask;                     // clear just the bits indicated
+    unsigned int orMask =  *flagp & exceptMask;             // latch the specified bits
+    
+    //read the state
+    mxcsr = _mm_getcsr();                                   //read the MXCSR state
+    __asm __volatile ("fnstenv %0" : "=m" (currfpu) );          //read x87 state
+
+    //fix up the MXCSR state
+    mxcsr &= andMask;
+    mxcsr |= orMask;
+
+    //fix up the x87 state
+    state = currfpu.__status;
+    state &= andMask;      
+    state |= orMask; 
+    currfpu.__status = state; 
+
+    //store the state
+    __asm __volatile ("ldmxcsr %0 ; fldenv %1" : : "m" (mxcsr), "m" (currfpu));
+    return 0;
+}
+
+static inline int _fegetexceptflag(fexcept_t *flagp, int excepts);
+static inline int _fegetexceptflag(fexcept_t *flagp, int excepts)
+{
+    fexcept_t fsw = GET_FSW();              //get the x87 status word
+    unsigned int mxcsr = _mm_getcsr();      //get the mxcsr
+    fexcept_t result = mxcsr | fsw;
+
+    result &= excepts & FE_ALL_EXCEPT;
+    
+    *flagp = result;
+    return 0;
+}
+#endif
+
+#if 1
+int  feclearexcept(int excepts)
+{
+    fexcept_t zero = 0;
+    return _fesetexceptflag( &zero, excepts );
+}
+#else
 extern inline OLM_DLLEXPORT int feclearexcept(int __excepts);
+#endif
+
 extern inline OLM_DLLEXPORT int fegetexceptflag(fexcept_t *__flagp, int __excepts);
 
+#if 1
+int  fesetexceptflag(const fexcept_t *flagp, int excepts )
+{
+    return _fesetexceptflag( flagp, excepts );
+}
+#else
 OLM_DLLEXPORT int
 fesetexceptflag(const fexcept_t *flagp, int excepts)
 {
@@ -68,6 +146,7 @@ fesetexceptflag(const fexcept_t *flagp, int excepts)
 
 	return (0);
 }
+#endif
 
 OLM_DLLEXPORT int
 feraiseexcept(int excepts)
@@ -83,6 +162,27 @@ extern inline OLM_DLLEXPORT int fetestexcept(int __excepts);
 extern inline OLM_DLLEXPORT int fegetround(void);
 extern inline OLM_DLLEXPORT int fesetround(int __round);
 
+#if 1
+int  fegetenv(fenv_t *envp)
+{
+    __fpustate_t currfpu;
+    int mxcsr = _mm_getcsr();
+    
+    __asm __volatile ("fnstenv %0" : "=m" (currfpu) :: "memory");
+    
+    envp->__control = currfpu.__control;
+    envp->__status = currfpu.__status;
+    envp->__mxcsr = mxcsr;
+    ((int*) envp->__reserved)[0] = 0;
+    ((int*) envp->__reserved)[1] = 0;
+       
+    // fnstenv masks floating-point exceptions.  We restore the state here
+    // in case any exceptions were originally unmasked.
+    __asm __volatile ("fldenv %0" : : "m" (currfpu));
+    
+    return 0;
+}
+#else
 OLM_DLLEXPORT int
 fegetenv(fenv_t *envp)
 {
@@ -96,7 +196,33 @@ fegetenv(fenv_t *envp)
 	__fldcw(envp->__x87.__control);
 	return (0);
 }
+#endif
 
+#if 1
+int   feholdexcept(fenv_t *envp)
+{
+    __fpustate_t currfpu;
+    int mxcsr;
+    
+    mxcsr = _mm_getcsr();
+    __asm __volatile ("fnstenv %0" : "=m" (*&currfpu) :: "memory");
+    
+    envp->__control = currfpu.__control;
+    envp->__status = currfpu.__status;
+    envp->__mxcsr = mxcsr;
+    ((int*) envp->__reserved)[0] = 0;
+    ((int*) envp->__reserved)[1] = 0;
+    
+    currfpu.__control |= FE_ALL_EXCEPT; // FPU shall handle all exceptions
+    currfpu.__status &= ~FE_ALL_EXCEPT;
+    mxcsr |= FE_ALL_EXCEPT << 7;  // left shifted because control mask is <<7 of the flags
+    mxcsr &= ~FE_ALL_EXCEPT;
+
+    __asm __volatile ("ldmxcsr %0 ; fldenv %1" : : "m" (*&mxcsr), "m" (*&currfpu));
+    
+    return 0;
+}
+#else
 OLM_DLLEXPORT int
 feholdexcept(fenv_t *envp)
 {
@@ -111,8 +237,23 @@ feholdexcept(fenv_t *envp)
 	__ldmxcsr(mxcsr);
 	return (0);
 }
+#endif
 
+#if 1
+int  fesetenv(const fenv_t *envp)
+{
+    __fpustate_t currfpu;
+    __asm __volatile ("fnstenv %0" : "=m" (currfpu));
+    
+    currfpu.__control = envp->__control;
+    currfpu.__status = envp->__status;
+    
+    __asm __volatile ("ldmxcsr %0 ; fldenv %1" : : "m" (envp->__mxcsr), "m" (currfpu));
+    return 0;
+}
+#else
 extern inline OLM_DLLEXPORT int fesetenv(const fenv_t *__envp);
+#endif
 
 OLM_DLLEXPORT int
 feupdateenv(const fenv_t *envp)

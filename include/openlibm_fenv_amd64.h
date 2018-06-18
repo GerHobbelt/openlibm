@@ -38,6 +38,15 @@
 #define	__fenv_static	static
 #endif
 
+#if 1
+// _sjc_ This is the fenv_t structure as defined for Intel in the macOS fenv.h
+typedef struct {
+    unsigned short          __control;      /* x87 control word               */
+    unsigned short          __status;       /* x87 status word                */
+    unsigned int            __mxcsr;        /* SSE status/control register    */
+    char                    __reserved[8];  /* Reserved for future expansion  */   
+} fenv_t;
+#else
 typedef struct {
 	struct {
 		uint32_t	__control;
@@ -47,6 +56,7 @@ typedef struct {
 	} __x87;
 	uint32_t		__mxcsr;
 } fenv_t;
+#endif
 
 typedef	uint16_t	fexcept_t;
 
@@ -95,6 +105,9 @@ extern const fenv_t	__fe_dfl_env;
 #define	__ldmxcsr(__csr)	__asm __volatile("ldmxcsr %0" : : "m" (__csr))
 #define	__stmxcsr(__csr)	__asm __volatile("stmxcsr %0" : "=m" (*(__csr)))
 
+#if 1
+int feclearexcept(int __excepts);
+#else
 __fenv_static __attribute__((always_inline)) inline int
 feclearexcept(int __excepts)
 {
@@ -112,6 +125,7 @@ feclearexcept(int __excepts)
 	__ldmxcsr(__env.__mxcsr);
 	return (0);
 }
+#endif
 
 __fenv_static inline int
 fegetexceptflag(fexcept_t *__flagp, int __excepts)
@@ -179,6 +193,9 @@ fesetround(int __round)
 OLM_DLLEXPORT int fegetenv(fenv_t *__envp);
 OLM_DLLEXPORT int feholdexcept(fenv_t *__envp);
 
+#if 1
+int fesetenv(const fenv_t *__envp);
+#else
 __fenv_static inline int
 fesetenv(const fenv_t *__envp)
 {
@@ -195,6 +212,7 @@ fesetenv(const fenv_t *__envp)
 	__ldmxcsr(__envp->__mxcsr);
 	return (0);
 }
+#endif
 
 OLM_DLLEXPORT int feupdateenv(const fenv_t *__envp);
 
