@@ -44,7 +44,7 @@ typedef struct {
     unsigned short          __control;      /* x87 control word               */
     unsigned short          __status;       /* x87 status word                */
     unsigned int            __mxcsr;        /* SSE status/control register    */
-    char                    __reserved[8];  /* Reserved for future expansion  */   
+    char                    __reserved[8];  /* Reserved for future expansion  */
 } fenv_t;
 #else
 typedef struct {

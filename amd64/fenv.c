@@ -77,7 +77,7 @@ static inline int _fesetexceptflag(const fexcept_t *flagp, int excepts )
     unsigned int exceptMask = excepts & FE_ALL_EXCEPT;
     unsigned int andMask = ~exceptMask;                     // clear just the bits indicated
     unsigned int orMask =  *flagp & exceptMask;             // latch the specified bits
-    
+
     //read the state
     mxcsr = _mm_getcsr();                                   //read the MXCSR state
     __asm __volatile ("fnstenv %0" : "=m" (currfpu) );          //read x87 state
@@ -88,9 +88,9 @@ static inline int _fesetexceptflag(const fexcept_t *flagp, int excepts )
 
     //fix up the x87 state
     state = currfpu.__status;
-    state &= andMask;      
-    state |= orMask; 
-    currfpu.__status = state; 
+    state &= andMask;
+    state |= orMask;
+    currfpu.__status = state;
 
     //store the state
     __asm __volatile ("ldmxcsr %0 ; fldenv %1" : : "m" (mxcsr), "m" (currfpu));
@@ -105,7 +105,7 @@ static inline int _fegetexceptflag(fexcept_t *flagp, int excepts)
     fexcept_t result = mxcsr | fsw;
 
     result &= excepts & FE_ALL_EXCEPT;
-    
+
     *flagp = result;
     return 0;
 }
@@ -167,19 +167,19 @@ int  fegetenv(fenv_t *envp)
 {
     __fpustate_t currfpu;
     int mxcsr = _mm_getcsr();
-    
+
     __asm __volatile ("fnstenv %0" : "=m" (currfpu) :: "memory");
-    
+
     envp->__control = currfpu.__control;
     envp->__status = currfpu.__status;
     envp->__mxcsr = mxcsr;
     ((int*) envp->__reserved)[0] = 0;
     ((int*) envp->__reserved)[1] = 0;
-       
+
     // fnstenv masks floating-point exceptions.  We restore the state here
     // in case any exceptions were originally unmasked.
     __asm __volatile ("fldenv %0" : : "m" (currfpu));
-    
+
     return 0;
 }
 #else
@@ -203,23 +203,23 @@ int   feholdexcept(fenv_t *envp)
 {
     __fpustate_t currfpu;
     int mxcsr;
-    
+
     mxcsr = _mm_getcsr();
     __asm __volatile ("fnstenv %0" : "=m" (*&currfpu) :: "memory");
-    
+
     envp->__control = currfpu.__control;
     envp->__status = currfpu.__status;
     envp->__mxcsr = mxcsr;
     ((int*) envp->__reserved)[0] = 0;
     ((int*) envp->__reserved)[1] = 0;
-    
+
     currfpu.__control |= FE_ALL_EXCEPT; // FPU shall handle all exceptions
     currfpu.__status &= ~FE_ALL_EXCEPT;
     mxcsr |= FE_ALL_EXCEPT << 7;  // left shifted because control mask is <<7 of the flags
     mxcsr &= ~FE_ALL_EXCEPT;
 
     __asm __volatile ("ldmxcsr %0 ; fldenv %1" : : "m" (*&mxcsr), "m" (*&currfpu));
-    
+
     return 0;
 }
 #else
@@ -244,10 +244,10 @@ int  fesetenv(const fenv_t *envp)
 {
     __fpustate_t currfpu;
     __asm __volatile ("fnstenv %0" : "=m" (currfpu));
-    
+
     currfpu.__control = envp->__control;
     currfpu.__status = envp->__status;
-    
+
     __asm __volatile ("ldmxcsr %0 ; fldenv %1" : : "m" (envp->__mxcsr), "m" (currfpu));
     return 0;
 }
