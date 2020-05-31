@@ -89,15 +89,16 @@ else
 ifeq ($(OS), Darwin)
 SHLIB_EXT = dylib
 SONAME_FLAG = -install_name
-SONAME = /usr/lib/system/libsystem_m.dylib
+shlibdir = /usr/lib/system
+SONAME = $(shlibdir)/libsystem_m.dylib
 LDFLAGS_add += -umbrella System -nostdlib -L$(DEPROOT)/usr/lib/system \
 	-lsystem_pthread -lsystem_c -lsystem_platform -lcompiler_rt -ldyld
 else
 SHLIB_EXT = so
 SONAME_FLAG = -soname
+shlibdir = $(libdir)
 endif
 CFLAGS_add += -fPIC
-shlibdir = $(libdir)
 endif
 
 # Add `-march` to our CFLAGS if it's defined

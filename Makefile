@@ -33,6 +33,8 @@ ifneq ($(OBJROOT),)
 OBJS := $(addprefix $(OBJROOT)/,$(OBJS))
 endif
 
+OUTPUT_NAME = libopenlibm.$(OLM_MAJOR_MINOR_SHLIB_EXT)
+
 # If we're on windows, don't do versioned shared libraries. Also, generate an import library
 # for the DLL. If we're on OSX, put the version number before the .dylib.  Otherwise,
 # put it after.
@@ -46,6 +48,7 @@ OLM_MAJOR_SHLIB_EXT := $(SOMAJOR).$(SHLIB_EXT)
 LDFLAGS_add += -compatibility_version 1.0.0
 LDFLAGS_add += -current_version $(SOMAJOR).$(SOMINOR).$(VERSION)
 CFLAGS_add += -D__PUREDARWIN__=1
+OUTPUT_NAME = libsystem_m.dylib
 else
 OLM_MAJOR_MINOR_SHLIB_EXT := $(SHLIB_EXT).$(SOMAJOR).$(SOMINOR)
 OLM_MAJOR_SHLIB_EXT := $(SHLIB_EXT).$(SOMAJOR)
@@ -64,12 +67,8 @@ check test: test/test-double test/test-float
 libopenlibm.a: $(OBJS)
 	$(AR) -rcs libopenlibm.a $(OBJS)
 
-libopenlibm.$(OLM_MAJOR_MINOR_SHLIB_EXT): $(OBJS)
+$(OUTPUT_NAME): $(OBJS)
 	$(CC) -shared $(OBJS) $(LDFLAGS) $(LDFLAGS_add) -Wl,$(SONAME_FLAG),$(SONAME) -o $@
-ifneq ($(OS),WINNT)
-	ln -sf $@ libopenlibm.$(OLM_MAJOR_SHLIB_EXT)
-	ln -sf $@ libopenlibm.$(SHLIB_EXT)
-endif
 
 test/test-double: libopenlibm.$(OLM_MAJOR_MINOR_SHLIB_EXT)
 	$(MAKE) -C test test-double
@@ -92,9 +91,9 @@ install-static: libopenlibm.a
 	mkdir -p $(DESTDIR)$(libdir)
 	cp -RpP -f libopenlibm.a $(DESTDIR)$(libdir)/
 
-install-shared: libopenlibm.$(OLM_MAJOR_MINOR_SHLIB_EXT)
+install-shared: $(OUTPUT_NAME)
 	mkdir -p $(DESTDIR)$(shlibdir)
-	cp -RpP -f libopenlibm.*$(SHLIB_EXT)* $(DESTDIR)$(shlibdir)/
+	cp -RpP -f $(OUTPUT_NAME) $(DESTDIR)$(shlibdir)/
 
 install-pkgconfig: openlibm.pc
 	mkdir -p $(DESTDIR)$(pkgconfigdir)
