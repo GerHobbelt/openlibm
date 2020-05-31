@@ -38,7 +38,7 @@
 #error "This file must be compiled with C99 'inline' semantics"
 #endif
 
-#if 1
+#ifdef __PUREDARWIN__
 // _sjc_ Check whether we need to set this default structure for PureDarwin
 #else
 const fenv_t __fe_dfl_env = {
@@ -52,7 +52,7 @@ const fenv_t __fe_dfl_env = {
 };
 #endif
 
-#if 1
+#ifdef __PUREDARWIN__
 // _sjc_ From Apple's Libm-2026
 typedef struct {
     unsigned short __control;
@@ -111,7 +111,7 @@ static inline int _fegetexceptflag(fexcept_t *flagp, int excepts)
 }
 #endif
 
-#if 1
+#ifdef __PUREDARWIN__
 int  feclearexcept(int excepts)
 {
     fexcept_t zero = 0;
@@ -123,7 +123,7 @@ extern inline OLM_DLLEXPORT int feclearexcept(int __excepts);
 
 extern inline OLM_DLLEXPORT int fegetexceptflag(fexcept_t *__flagp, int __excepts);
 
-#if 1
+#ifdef __PUREDARWIN__
 int  fesetexceptflag(const fexcept_t *flagp, int excepts )
 {
     return _fesetexceptflag( flagp, excepts );
@@ -162,7 +162,7 @@ extern inline OLM_DLLEXPORT int fetestexcept(int __excepts);
 extern inline OLM_DLLEXPORT int fegetround(void);
 extern inline OLM_DLLEXPORT int fesetround(int __round);
 
-#if 1
+#ifdef __PUREDARWIN__
 int  fegetenv(fenv_t *envp)
 {
     __fpustate_t currfpu;
@@ -198,7 +198,7 @@ fegetenv(fenv_t *envp)
 }
 #endif
 
-#if 1
+#ifdef __PUREDARWIN__
 int   feholdexcept(fenv_t *envp)
 {
     __fpustate_t currfpu;
@@ -239,7 +239,7 @@ feholdexcept(fenv_t *envp)
 }
 #endif
 
-#if 1
+#ifdef __PUREDARWIN__
 int  fesetenv(const fenv_t *envp)
 {
     __fpustate_t currfpu;
