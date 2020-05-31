@@ -134,17 +134,25 @@ endif
 endif
 
 
+ifneq ($(OBJROOT),)
+_obj_prefix=$(OBJROOT)/
+endif
+
 # *int / *intf need to be built with -O0
-src/%int.c.o: src/%int.c
+$(_obj_prefix)src/%int.c.o: src/%int.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) -O0 $(CFLAGS_add) -c $< -o $@
 
-src/%intf.c.o: src/%intf.c
+$(_obj_prefix)src/%intf.c.o: src/%intf.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) -O0 $(CFLAGS_add) -c $< -o $@
 
-%.c.o: %.c
+$(_obj_prefix)%.c.o: %.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(CFLAGS_add) -c $< -o $@
 
-%.S.o: %.S
+$(_obj_prefix)%.S.o: %.S
+	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(SFLAGS) $(SFLAGS_add) $(filter -m% -B% -I% -D%,$(CFLAGS_add)) -c $< -o $@
 
 

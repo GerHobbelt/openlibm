@@ -29,6 +29,9 @@ DUPLICATE_SRCS = $(addsuffix .c,$(DUPLICATE_NAMES))
 OBJS =  $(patsubst %.f,%.f.o,\
 	$(patsubst %.S,%.S.o,\
 	$(patsubst %.c,%.c.o,$(filter-out $(addprefix src/,$(DUPLICATE_SRCS)),$(SRCS)))))
+ifneq ($(OBJROOT),)
+OBJS := $(addprefix $(OBJROOT)/,$(OBJS))
+endif
 
 # If we're on windows, don't do versioned shared libraries. Also, generate an import library
 # for the DLL. If we're on OSX, put the version number before the .dylib.  Otherwise,
@@ -75,6 +78,7 @@ test/test-float: libopenlibm.$(OLM_MAJOR_MINOR_SHLIB_EXT)
 	$(MAKE) -C test test-float
 
 clean:
+	rm -f $(OBJS)
 	rm -f aarch64/*.o amd64/*.o arm/*.o bsdsrc/*.o i387/*.o ld80/*.o ld128/*.o src/*.o powerpc/*.o
 	rm -f libopenlibm.a libopenlibm.*$(SHLIB_EXT)*
 	$(MAKE) -C test clean
