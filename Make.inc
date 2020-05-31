@@ -77,6 +77,8 @@ ifneq (,$(findstring MINGW,$(OS)))
 override OS=WINNT
 endif
 
+SONAME = libopenlibm.$(OLM_MAJOR_SHLIB_EXT)
+
 #keep these if statements separate
 ifeq ($(OS), WINNT)
 SHLIB_EXT = dll
@@ -87,6 +89,7 @@ else
 ifeq ($(OS), Darwin)
 SHLIB_EXT = dylib
 SONAME_FLAG = -install_name
+SONAME = /usr/lib/system/libsystem_m.dylib
 else
 SHLIB_EXT = so
 SONAME_FLAG = -soname
